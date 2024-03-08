@@ -22,19 +22,7 @@ class ApiService {
 
     // Construct the full endpoint URL with query parameters
     String fullUrl = _httpService.buildUrl("${EndPoints.PRAYER_TIMINGS}$date", queryParams);
-    log(fullUrl);
+
     return await _httpService.get(fullUrl);
-  }
-
-  Future<dynamic> createPost(dynamic postData) async {
-    return await _httpService.post('/posts', postData);
-  }
-
-  Future<dynamic> updatePost(int postId, dynamic updatedData) async {
-    return await _httpService.put('/posts/$postId', updatedData);
-  }
-
-  Future<dynamic> deletePost(int postId) async {
-    return await _httpService.delete('/posts/$postId');
   }
 }

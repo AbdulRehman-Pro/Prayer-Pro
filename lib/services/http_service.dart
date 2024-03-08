@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:prayer_pro/prayer_model.dart';
 
 import 'logging_interceptor.dart';
 
@@ -51,6 +52,7 @@ class HttpService {
 
   dynamic _handleResponse(Response response) {
     if (response.statusCode! >= 200 && response.statusCode! < 300) {
+      print('${prayerModelFromJson(response.data)}');
       return response.data;
     } else {
       throw Exception('Failed to load data: ${response.statusCode}');

@@ -1,4 +1,4 @@
-# prayer_pro
+# Prayer Pro
 
 A new Flutter project.
 

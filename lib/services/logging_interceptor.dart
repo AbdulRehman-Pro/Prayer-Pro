@@ -20,12 +20,8 @@ class LoggingInterceptor extends Interceptor {
         emoji: "🚀",
         logType: "on-Request",
         message: '*** API Request - Start ***');
-    String bold = '\x1B[1m';
-    String normal = '\x1B[0m';
-    String reset = '\x1B[0m';
-    String _pink = "\x1b[38;5;205m";
-    print('$_pink$bold${options.uri}$normal$_pink');
-    // printKV('URI', options.uri);
+
+    printKV('URI', options.uri);
     printKV('METHOD', options.method);
     logPrint('HEADERS:');
     options.headers.forEach((key, v) => printKV(' - $key', v));

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:prayer_pro/prayer_model.dart';
 
 import '../../services/api_service.dart';
 import '../../utils/color_res.dart';
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _fetchPrayers() async {
     try {
       dynamic posts = await _apiService.fetchPrayers(date: "1-03-2024", latitude: 31.53472296326869, longitude: 74.31115185474322, school: 1);
-      print('Fetched Posts: $posts');
+      print('Fetched Posts: ${prayerModelFromJson(posts)}');
     } catch (e) {
       print('Error fetching posts: $e');
     }
