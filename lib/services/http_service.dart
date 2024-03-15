@@ -52,7 +52,6 @@ class HttpService {
 
   dynamic _handleResponse(Response response) {
     if (response.statusCode! >= 200 && response.statusCode! < 300) {
-      print('${prayerModelFromJson(response.data)}');
       return response.data;
     } else {
       throw Exception('Failed to load data: ${response.statusCode}');

@@ -1,14 +1,25 @@
 import 'dart:async';
+import 'dart:developer';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:prayer_pro/animations/fade_in_slide.dart';
 import 'package:prayer_pro/screens/home_screen/home_screen.dart';
 import 'package:prayer_pro/utils/color_res.dart';
 import 'package:prayer_pro/utils/utils.dart';
+import 'package:restart_app/restart_app.dart';
+import 'package:geocoding/geocoding.dart';
 
+import '../../prayer_model.dart';
+import '../../services/api_service.dart';
 import '../../utils/svg_res.dart';
+import 'package:prayer_pro/utils/utils.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,14 +29,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
-   Timer(const Duration(seconds: 5), () {
-     navigateReplaceTo(context,const HomeScreen());
-   });
     super.initState();
+    _fetchPrayers();
   }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -56,8 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   bottom: 0,
                   left: -100,
                   child: SvgPicture.asset(
-                    SvgRes.singleMosque,
-                    color: Colors.white12,
+                    SvgRes.singleMosque_,
                   )),
               Positioned(
                   bottom: 280,
@@ -83,7 +93,6 @@ class _SplashScreenState extends State<SplashScreen> {
                     height: 5,
                     width: 5,
                   )),
-
               Positioned(
                   bottom: 400,
                   right: 100,
@@ -157,4 +166,122 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
     );
   }
+
+  void _fetchPrayers() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    LocationPermission permission = await Geolocator.checkPermission();
+    bool permissionCheck = (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always);
+    debugPrint(":: Service = $serviceEnabled , Permission = $permissionCheck");
+
+    if (!serviceEnabled) {
+      Geolocator.openLocationSettings();
+    }
+    if (permission == LocationPermission.denied) {
+      Geolocator.requestPermission();
+    }
+
+    if (permissionCheck) {
+      try {
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        List<Placemark> placeMarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        String locationName = "${placeMarks[0].subAdministrativeArea}, ${placeMarks[0].country}";
+
+        dynamic response = await _apiService.fetchPrayers(
+            date: DateFormat('dd-MM-yyyy').format(DateTime.now()),
+            latitude: position.latitude,
+            longitude: position.longitude,
+            school: 1,
+            adjustment: -1);
+        PrayerModel prayerResponse = PrayerModel.fromJson(response);
+
+        List<String> prayerList = [];
+
+        Map<String, dynamic> timingsMap = prayerResponse.data!.timings!.toPrayerJson();
+        timingsMap.forEach((key, value) {
+            prayerList.add('$key: $value');
+            print('$key: ${value.toString().convertTo12HourFormat()}');
+
+        });
+
+        // Print the list
+        print(prayerList);
+
+
+
+        setState(() {
+          navigateReplaceTo(
+              context, HomeScreen(prayerResponse: prayerResponse,locationName:locationName,prayerList:prayerList));
+        });
+      } catch (e) {
+        debugPrint('Error fetching prayers: $e');
+        showInternetDialog();
+      }
+    }
+  }
+
+  showInternetDialog() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (_, __, ___) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.only(top: 25, right: 10, left: 10),
+              width: MediaQuery.of(context).size.width * .8,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    "Oops! looks like you don't have active internet connection.\n\nPlease connect with stable network.",
+                    style: GoogleFonts.inter(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _fetchPrayers();
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      height: 50,
+                      margin: const EdgeInsets.only(
+                          top: 20, right: 10, left: 10, bottom: 20),
+                      width: double.maxFinite,
+                      decoration: BoxDecoration(
+                          color: ColorRes.darkPurpleColor,
+                          borderRadius: BorderRadius.circular(15)),
+                      child: Text(
+                        "Try Again",
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
 }

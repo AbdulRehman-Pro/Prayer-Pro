@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 double screenHeight(BuildContext context) {
   return MediaQuery.of(context).size.height;
@@ -80,5 +81,12 @@ extension ColorExtension on String {
     if (hexColor.length == 8) {
       return Color(int.parse("0x$hexColor"));
     }
+  }
+}
+
+extension TimeConversion on String {
+  String convertTo12HourFormat() {
+    DateTime parsedTime = DateFormat('HH:mm').parse(this);
+    return DateFormat('hh:mm a').format(parsedTime);
   }
 }

@@ -4,6 +4,9 @@
 
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
+
 PrayerModel prayerModelFromJson(String str) =>
     PrayerModel.fromJson(json.decode(str));
 
@@ -12,24 +15,24 @@ String prayerModelToJson(PrayerModel data) => json.encode(data.toJson());
 class PrayerModel {
   int? code;
   String? status;
-  // Data? data;
+  Data? data;
 
   PrayerModel({
     this.code,
     this.status,
-    // this.data,
+    this.data,
   });
 
   factory PrayerModel.fromJson(Map<String, dynamic> json) => PrayerModel(
         code: json["code"],
         status: json["status"],
-        // data: Data.fromJson(json["data"]),
+        data: Data.fromJson(json["data"]),
       );
 
   Map<String, dynamic> toJson() => {
         "code": code,
         "status": status,
-        // "data": data!.toJson(),
+        "data": data!.toJson(),
       };
 }
 
@@ -123,6 +126,10 @@ class Gregorian {
         "year": year,
         "designation": designation!.toJson(),
       };
+
+  String get formattedDate {
+    return formatGregorianDate(date!);
+  }
 }
 
 class Designation {
@@ -224,6 +231,10 @@ class Hijri {
         "designation": designation!.toJson(),
         "holidays": List<dynamic>.from(holidays!.map((x) => x)),
       };
+
+  String get formattedDate {
+    return "$day ${month!.en} $year";
+  }
 }
 
 class HijriMonth {
@@ -438,4 +449,347 @@ class Timings {
         "Firstthird": firstthird,
         "Lastthird": lastthird,
       };
+
+  Map<String, dynamic> toPrayerJson() => {
+        "Fajr": fajr,
+        "Dhuhr": dhuhr,
+        "Asr": asr,
+        "Maghrib": maghrib,
+        "Isha": isha,
+      };
+
+  Map<String, String?> getNextPrayer(DateTime currentTime) {
+    Map<String, String?> nextPrayer = {};
+    List<String?> prayerTimes = [fajr, dhuhr, asr, maghrib, isha];
+    List<String> prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+    // Format the current time in 24-hour format
+    String formattedCurrentTime = DateFormat('HH:mm').format(currentTime);
+    DateTime parsedCurrentTime =
+        DateFormat('HH:mm').parse(formattedCurrentTime);
+
+    for (int i = 0; i < prayerTimes.length; i++) {
+      String? prayerTime = prayerTimes[i];
+      if (prayerTime != null) {
+        try {
+          // Parse the prayer time into a DateTime object
+          DateTime parsedPrayerTime = DateFormat('HH:mm').parse(prayerTime);
+
+          // Format the parsed prayer time back to a string
+          String formattedPrayerTime =
+              DateFormat('HH:mm').format(parsedPrayerTime);
+
+          // Compare the formatted current time with the formatted prayer time
+          if (formattedPrayerTime.compareTo(formattedCurrentTime) > 0) {
+            nextPrayer[prayerNames[i]] = prayerTime;
+            // Calculate the time difference
+            Duration timeDifference =
+                parsedPrayerTime.difference(parsedCurrentTime);
+            nextPrayer['TimeDifference'] = formatTimeDifference(timeDifference);
+            break;
+          }
+        } catch (e) {
+          debugPrint('Error parsing prayer time: $e');
+        }
+      }
+    }
+
+    return nextPrayer;
+  }
+
+  String formatTimeDifference(Duration difference) {
+    int hours = difference.inHours;
+    int minutes = difference.inMinutes.remainder(60);
+    return '${hours}h ${minutes}m';
+  }
 }
+
+class PrayerTimings {
+  String fajr;
+  String dhuhr;
+  String asr;
+  String maghrib;
+  String isha;
+
+  PrayerTimings({
+    required this.fajr,
+    required this.dhuhr,
+    required this.asr,
+    required this.maghrib,
+    required this.isha,
+  });
+}
+
+String formatGregorianDate(String dateString) {
+  // Split the date string into day, month, and year
+  List<String> parts = dateString.split('-');
+  String day = parts[0];
+  String month = parts[1];
+  String year = parts[2];
+
+  // Convert month number to its abbreviation
+  Map<String, String> monthAbbreviations = {
+    '01': 'Jan',
+    '02': 'Feb',
+    '03': 'Mar',
+    '04': 'Apr',
+    '05': 'May',
+    '06': 'Jun',
+    '07': 'Jul',
+    '08': 'Aug',
+    '09': 'Sep',
+    '10': 'Oct',
+    '11': 'Nov',
+    '12': 'Dec'
+  };
+
+  String? monthAbbreviation = monthAbbreviations[month];
+
+  // Format the date as "Tue, 12 Mar 2024"
+  DateTime dateTime =
+      DateTime(int.parse(year), int.parse(month), int.parse(day));
+  String weekday =
+      DateFormat('EEE').format(dateTime); // Get weekday abbreviation
+  return '$weekday, $day $monthAbbreviation $year';
+}
+
+class Prayer {
+  final String name;
+  final String time;
+
+  Prayer({required this.name, required this.time});
+}
+
+//
+// class PrayerResponse {
+//   final int code;
+//   final String status;
+//   final PrayerData data;
+//   final Meta meta;
+//
+//   PrayerResponse({required this.code, required this.status, required this.data, required this.meta});
+//
+//   factory PrayerResponse.fromJson(Map<String, dynamic> json) {
+//     return PrayerResponse(
+//       code: json['code'],
+//       status: json['status'],
+//       data: PrayerData.fromJson(json['data']),
+//       meta: Meta.fromJson(json['meta']),
+//     );
+//   }
+// }
+//
+//
+// // class PrayerData {
+// //   final Map<String, String> timings;
+// //   final PrayerDate date;
+// //
+// //   PrayerData({required this.timings, required this.date});
+// //
+// //   factory PrayerData.fromJson(Map<String, dynamic> json) {
+// //     return PrayerData(
+// //       timings: (json['timings'] as Map<String, dynamic>).map((key, value) => MapEntry(key, value.toString())),
+// //       date: PrayerDate.fromJson(json['date']),
+// //     );
+// //   }
+// // }
+//
+// class PrayerData {
+//   final Map<String, String> timings;
+//   final PrayerDate date;
+//
+//   PrayerData({required this.timings, required this.date});
+//
+//   factory PrayerData.fromJson(Map<String, dynamic> json) {
+//     Map<String, String> timings = {};
+//
+//     if (json['timings'] != null && json['timings'] is Map<String, dynamic>) {
+//       json['timings'].forEach((key, value) {
+//         if (value is String) {
+//           timings[key] = value;
+//         } else if (value is Map<String, dynamic>) {
+//           timings[key] = value.toString();
+//         }
+//       });
+//     }
+//
+//     return PrayerData(
+//       timings: timings,
+//       date: PrayerDate.fromJson(json['date']),
+//     );
+//   }
+// }
+//
+//
+//
+// class PrayerDate {
+//   final String readable;
+//   final String timestamp;
+//   final Hijri hijri;
+//   final Gregorian gregorian;
+//
+//   PrayerDate({required this.readable, required this.timestamp, required this.hijri, required this.gregorian});
+//
+//   factory PrayerDate.fromJson(Map<String, dynamic> json) {
+//     return PrayerDate(
+//       readable: json['readable'],
+//       timestamp: json['timestamp'],
+//       hijri: Hijri.fromJson(json['hijri']),
+//       gregorian: Gregorian.fromJson(json['gregorian']),
+//     );
+//   }
+// }
+//
+// class Hijri {
+//   final String date;
+//   final String format;
+//   final String day;
+//   final Map<String, String> weekday;
+//   final Map<String, String> month;
+//   final String year;
+//   final Designation designation;
+//   final List<dynamic> holidays;
+//
+//   Hijri({
+//     required this.date,
+//     required this.format,
+//     required this.day,
+//     required this.weekday,
+//     required this.month,
+//     required this.year,
+//     required this.designation,
+//     required this.holidays,
+//   });
+//
+//   factory Hijri.fromJson(Map<String, dynamic> json) {
+//     return Hijri(
+//       date: json['date'],
+//       format: json['format'],
+//       day: json['day'],
+//       weekday: json['weekday'],
+//       month: json['month'],
+//       year: json['year'],
+//       designation: Designation.fromJson(json['designation']),
+//       holidays: json['holidays'],
+//     );
+//   }
+// }
+//
+// class Gregorian {
+//   final String date;
+//   final String format;
+//   final String day;
+//   final Map<String, String> weekday;
+//   final Map<String, String> month;
+//   final String year;
+//   final Designation designation;
+//
+//   Gregorian({
+//     required this.date,
+//     required this.format,
+//     required this.day,
+//     required this.weekday,
+//     required this.month,
+//     required this.year,
+//     required this.designation,
+//   });
+//
+//   factory Gregorian.fromJson(Map<String, dynamic> json) {
+//     return Gregorian(
+//       date: json['date'],
+//       format: json['format'],
+//       day: json['day'],
+//       weekday: json['weekday'],
+//       month: json['month'],
+//       year: json['year'],
+//       designation: Designation.fromJson(json['designation']),
+//     );
+//   }
+// }
+//
+// class Designation {
+//   final String abbreviated;
+//   final String expanded;
+//
+//   Designation({required this.abbreviated, required this.expanded});
+//
+//   factory Designation.fromJson(Map<String, dynamic> json) {
+//     return Designation(
+//       abbreviated: json['abbreviated'],
+//       expanded: json['expanded'],
+//     );
+//   }
+// }
+//
+// class Meta {
+//   final double latitude;
+//   final double longitude;
+//   final String timezone;
+//   final Method method;
+//   final String latitudeAdjustmentMethod;
+//   final String midnightMode;
+//   final String school;
+//   final Map<String, int> offset;
+//
+//   Meta({
+//     required this.latitude,
+//     required this.longitude,
+//     required this.timezone,
+//     required this.method,
+//     required this.latitudeAdjustmentMethod,
+//     required this.midnightMode,
+//     required this.school,
+//     required this.offset,
+//   });
+//
+//   factory Meta.fromJson(Map<String, dynamic> json) {
+//     return Meta(
+//       latitude: json['latitude'],
+//       longitude: json['longitude'],
+//       timezone: json['timezone'],
+//       method: Method.fromJson(json['method']),
+//       latitudeAdjustmentMethod: json['latitudeAdjustmentMethod'],
+//       midnightMode: json['midnightMode'],
+//       school: json['school'],
+//       offset: (json['offset'] as Map<String, dynamic>).map((key, value) => MapEntry(key, value as int)),
+//     );
+//   }
+// }
+//
+// class Method {
+//   final int id;
+//   final String name;
+//   final Map<String, int> params;
+//   final Location location;
+//
+//   Method({
+//     required this.id,
+//     required this.name,
+//     required this.params,
+//     required this.location,
+//   });
+//
+//   factory Method.fromJson(Map<String, dynamic> json) {
+//     return Method(
+//       id: json['id'],
+//       name: json['name'],
+//       params: (json['params'] as Map<String, dynamic>).map((key, value) => MapEntry(key, value as int)),
+//       location: Location.fromJson(json['location']),
+//     );
+//   }
+// }
+//
+// class Location {
+//   final double latitude;
+//   final double longitude;
+//
+//   Location({required this.latitude, required this.longitude});
+//
+//   factory Location.fromJson(Map<String, dynamic> json) {
+//     return Location(
+//       latitude: json['latitude'],
+//       longitude: json['longitude'],
+//     );
+//   }
+// }
+//
