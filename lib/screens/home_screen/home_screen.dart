@@ -535,23 +535,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: EdgeInsets.zero,
                         itemCount: widget.prayerList.length,
                         itemBuilder: (context, index) {
-                          List<String> keyValue = widget.prayerList[index].split(':');
+                          List<String> keyValue =
+                              widget.prayerList[index].split(':');
                           String prayerName = keyValue[0].trim();
-                          String prayerTime = "${keyValue[1].trim()}:${keyValue[2].trim()}";
+                          String prayerTime =
+                              "${keyValue[1].trim()}:${keyValue[2].trim()}";
 
                           String nextPrayerName = '';
                           String nextPrayerTime = '';
+                          //
+                          // if (index < widget.prayerList.length - 1) {
+                          //   List<String> nextKeyValue =
+                          //       widget.prayerList[0].split(':');
+                          //   nextPrayerName = nextKeyValue[0].trim();
+                          //   nextPrayerTime =
+                          //       "${nextKeyValue[1].trim()}:${nextKeyValue[2].trim()}";
+                          // }
 
                           if (index < widget.prayerList.length - 1) {
-                            List<String> nextKeyValue = widget.prayerList[0].split(':');
+                            List<String> nextKeyValue = widget.prayerList[index + 1].split(':');
                             nextPrayerName = nextKeyValue[0].trim();
                             nextPrayerTime = "${nextKeyValue[1].trim()}:${nextKeyValue[2].trim()}";
-
-
                           }
-                          print("Current index $index, next index ${index == 4 ? 0 : index + 1}");
 
-                          bool isCurrentPrayerTime = checkIfCurrentPrayerTime(prayerTime,nextPrayerTime);
+                          bool isCurrentPrayerTime =
+                              checkIfCurrentPrayerTime(prayerTime, nextPrayerTime,index);
                           return FadeInSlide(
                             duration: 1.0 + (index * 0.1).toDouble(),
                             child: Container(
@@ -561,17 +569,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   left: 10,
                                   right: 10),
                               decoration: BoxDecoration(
-                                color: isCurrentPrayerTime ? ColorRes.lightestPurpleColor : Colors.transparent,
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isCurrentPrayerTime ? ColorRes.lightPurpleColor : Colors.transparent,
-                                    blurRadius: 3,
-                                    spreadRadius: 1.5,
-                                    offset: const Offset(0, 1.5)
-                                  )
-                                ]
-                              ),
+                                  color: isCurrentPrayerTime
+                                      ? ColorRes.lightestPurpleColor
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(15),
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: isCurrentPrayerTime
+                                            ? ColorRes.lightPurpleColor
+                                            : Colors.transparent,
+                                        blurRadius: 3,
+                                        spreadRadius: 1.5,
+                                        offset: const Offset(0, 1.5))
+                                  ]),
                               child: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -588,8 +598,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Text(
                                         prayerName,
                                         style: GoogleFonts.inter(
-                                            color: isCurrentPrayerTime ? Colors.black : Colors.black54,
-                                            fontWeight: isCurrentPrayerTime ? FontWeight.w800 :FontWeight.bold,
+                                            color: isCurrentPrayerTime
+                                                ? Colors.black
+                                                : Colors.black54,
+                                            fontWeight: isCurrentPrayerTime
+                                                ? FontWeight.w800
+                                                : FontWeight.bold,
                                             fontSize: 14),
                                       )
                                     ],
@@ -599,8 +613,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Text(
                                         prayerTime.convertTo12HourFormat(),
                                         style: GoogleFonts.inter(
-                                            color: isCurrentPrayerTime ? Colors.black : Colors.black54,
-                                            fontWeight: isCurrentPrayerTime ? FontWeight.w800 :FontWeight.bold,
+                                            color: isCurrentPrayerTime
+                                                ? Colors.black
+                                                : Colors.black54,
+                                            fontWeight: isCurrentPrayerTime
+                                                ? FontWeight.w800
+                                                : FontWeight.bold,
                                             fontSize: 14),
                                       ),
                                       const SizedBox(
@@ -625,23 +643,136 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  bool checkIfCurrentPrayerTime(String prayerTime, String nextPrayerTime) {
+  bool checkIfCurrentPrayerTime(String prayerTime, String nextPrayerTime, int index) {
     DateTime now = DateTime.now();
+
     List<String> parts = prayerTime.split(':');
     int prayerHour = int.parse(parts[0]);
     int prayerMinute = int.parse(parts[1]);
-    //
 
-    // List<String> nextParts = nextPrayerTime.split(':');
-    // int nextPrayerHour = int.parse(nextParts[0]);
-    // int nextPrayerMinute = int.parse(nextParts[1]);
+    int nextPrayerHour;
+    int nextPrayerMinute;
 
-    print("Current Prayer time ${prayerTime.convertTo12HourFormat()} : Next Prayer Time ${nextPrayerTime}");
+    if (index < widget.prayerList.length - 1) {
+      List<String> nextParts = nextPrayerTime.split(':');
+      nextPrayerHour = int.parse(nextParts[0]);
+      nextPrayerMinute = int.parse(nextParts[1]);
+    } else {
+      // Treat the next prayer time as the same as the first prayer time
+      List<String> firstPrayerParts = widget.prayerList[0].split(':');
+      nextPrayerHour = int.parse(firstPrayerParts[1]);
+      nextPrayerMinute = int.parse(firstPrayerParts[2]);
+      // Ensure that next prayer is greater than current prayer time
+      if (nextPrayerHour < prayerHour || (nextPrayerHour == prayerHour && nextPrayerMinute < prayerMinute)) {
+        nextPrayerHour += 24; // Add 24 hours to make it greater than current time
+      }
+    }
 
-    return ((now.hour >= prayerHour ) && (now.minute >= prayerMinute) );
+    if ((now.hour > prayerHour || (now.hour == prayerHour && now.minute >= prayerMinute)) &&
+        (now.hour < nextPrayerHour || (now.hour == nextPrayerHour && now.minute < nextPrayerMinute))) {
+      return true;
+    }
 
+    return false;
   }
 
 
+//
+  // bool checkIfCurrentPrayerTime(String prayerTime, String nextPrayerTime, int index) {
+  //   DateTime now = DateTime.now();
+  //
+  //   List<String> parts = prayerTime.split(':');
+  //   int prayerHour = int.parse(parts[0]);
+  //   int prayerMinute = int.parse(parts[1]);
+  //
+  //   int? nextPrayerHour;
+  //   int? nextPrayerMinute;
+  //
+  //   if (index < widget.prayerList.length - 1) {
+  //     List<String> nextParts = nextPrayerTime.split(':');
+  //     nextPrayerHour = int.parse(nextParts[0]);
+  //     nextPrayerMinute = int.parse(nextParts[1]);
+  //   } else if (widget.prayerList.isNotEmpty) {
+  //
+  //     // Handle the case of the last prayer time of the day
+  //     // If the current time is after the last prayer time but before midnight,
+  //     // then the next prayer time is the first prayer time of the next day
+  //     if (now.hour >= 19 && now.minute >= 43) {
+  //       List<String> firstPrayerParts = widget.prayerList[0].split(':');
+  //       nextPrayerHour = int.parse(firstPrayerParts[1]);
+  //       nextPrayerMinute = int.parse(firstPrayerParts[2]);
+  //     }
+  //   }
+  //
+  //   if (nextPrayerHour != null && nextPrayerMinute != null) {
+  //     if ((now.hour > prayerHour || (now.hour == prayerHour && now.minute >= prayerMinute)) &&
+  //         (now.hour < nextPrayerHour || (now.hour == nextPrayerHour && now.minute < nextPrayerMinute))) {
+  //       return true;
+  //     }
+  //   }
+  //
+  //   return false;
+  // }
 
+
+
+// bool checkIfCurrentPrayerTime(String prayerTime, String nextPrayerTime) {
+  //   DateTime now = DateTime.now();
+  //
+  //   List<String> parts = prayerTime.split(':');
+  //   int prayerHour = int.parse(parts[0]);
+  //   int prayerMinute = int.parse(parts[1]);
+  //
+  //   // Ensure nextPrayerTime is not empty or null before attempting to split
+  //   if (nextPrayerTime.isNotEmpty) {
+  //     List<String> nextParts = nextPrayerTime.split(':');
+  //     // Ensure nextParts has at least two elements before accessing
+  //     if (nextParts.length >= 2) {
+  //       int? nextPrayerHour = int.tryParse(nextParts[0]);
+  //       int? nextPrayerMinute = int.tryParse(nextParts[1]);
+  //
+  //       if (nextPrayerHour != null && nextPrayerMinute != null) {
+  //         if ((now.hour > prayerHour || (now.hour == prayerHour && now.minute >= prayerMinute)) &&
+  //             (now.hour < nextPrayerHour || (now.hour == nextPrayerHour && now.minute < nextPrayerMinute))) {
+  //           return true;
+  //         }
+  //       }
+  //     }
+  //   }
+  //
+  //   return false;
+  // }
+
+  //
+  // bool checkIfCurrentPrayerTime(String prayerTime, int index) {
+  //   DateTime now = DateTime.now();
+  //   List<String> parts = prayerTime.split(':');
+  //   int prayerHour = int.parse(parts[0]);
+  //   int prayerMinute = int.parse(parts[1]);
+  //   //
+  //
+  //   // List<String> nextParts = nextPrayerTime.split(':');
+  //   // int nextPrayerHour = int.parse(nextParts[0]);
+  //   // int nextPrayerMinute = int.parse(nextParts[1]);
+  //
+  //   if (((now.hour >= prayerHour) && (now.minute >= prayerMinute))) {
+  //     List<String> nextKeyValue = widget.prayerList[index + 1].split(':');
+  //     var nextPrayerName = nextKeyValue[0].trim();
+  //     var nextPrayerTime =
+  //         "${nextKeyValue[1].trim()}:${nextKeyValue[2].trim()}";
+  //     List<String> parts = nextPrayerTime.split(':');
+  //     int nextPrayerHour = int.parse(parts[0]);
+  //     int nextPrayerMinute = int.parse(parts[1]);
+  //     print(
+  //         "Current Prayer ${prayerTime.convertTo12HourFormat()} - $index ::: $nextPrayerName : ${nextPrayerTime.convertTo12HourFormat()}");
+
+  //     if (((now.hour >= prayerHour) && (prayerHour <= nextPrayerHour)) &&
+  //         ((now.minute >= prayerMinute) &&
+  //             (prayerMinute <= nextPrayerMinute))) {
+  //       return true;
+  //     }
+  //   }
+  //
+  //   return false;
+  // }
 }

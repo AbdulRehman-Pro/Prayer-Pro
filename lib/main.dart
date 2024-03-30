@@ -39,12 +39,3 @@ class MyApp extends StatelessWidget {
         home: const SplashScreen());
   }
 }
-
-class TestPage extends StatelessWidget {
-  const TestPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold();
-  }
-}

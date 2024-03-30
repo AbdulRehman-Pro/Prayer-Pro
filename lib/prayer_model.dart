@@ -458,6 +458,45 @@ class Timings {
         "Isha": isha,
       };
 
+  // Map<String, String?> getNextPrayer(DateTime currentTime) {
+  //   Map<String, String?> nextPrayer = {};
+  //   List<String?> prayerTimes = [fajr, dhuhr, asr, maghrib, isha];
+  //   List<String> prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+  //
+  //   // Format the current time in 24-hour format
+  //   String formattedCurrentTime = DateFormat('HH:mm').format(currentTime);
+  //   DateTime parsedCurrentTime =
+  //       DateFormat('HH:mm').parse(formattedCurrentTime);
+  //
+  //   for (int i = 0; i < prayerTimes.length; i++) {
+  //     String? prayerTime = prayerTimes[i];
+  //     if (prayerTime != null) {
+  //       try {
+  //         // Parse the prayer time into a DateTime object
+  //         DateTime parsedPrayerTime = DateFormat('HH:mm').parse(prayerTime);
+  //
+  //         // Format the parsed prayer time back to a string
+  //         String formattedPrayerTime =
+  //             DateFormat('HH:mm').format(parsedPrayerTime);
+  //
+  //         // Compare the formatted current time with the formatted prayer time
+  //         if (formattedPrayerTime.compareTo(formattedCurrentTime) > 0) {
+  //           nextPrayer[prayerNames[i]] = prayerTime;
+  //           // Calculate the time difference
+  //           Duration timeDifference =
+  //               parsedPrayerTime.difference(parsedCurrentTime);
+  //           nextPrayer['TimeDifference'] = formatTimeDifference(timeDifference);
+  //           break;
+  //         }
+  //       } catch (e) {
+  //         debugPrint('Error parsing prayer time: $e');
+  //       }
+  //     }
+  //   }
+  //
+  //   return nextPrayer;
+  // }
+
   Map<String, String?> getNextPrayer(DateTime currentTime) {
     Map<String, String?> nextPrayer = {};
     List<String?> prayerTimes = [fajr, dhuhr, asr, maghrib, isha];
@@ -466,8 +505,9 @@ class Timings {
     // Format the current time in 24-hour format
     String formattedCurrentTime = DateFormat('HH:mm').format(currentTime);
     DateTime parsedCurrentTime =
-        DateFormat('HH:mm').parse(formattedCurrentTime);
+    DateFormat('HH:mm').parse(formattedCurrentTime);
 
+    bool isLastIndex = true; // flag to indicate if last index is reached
     for (int i = 0; i < prayerTimes.length; i++) {
       String? prayerTime = prayerTimes[i];
       if (prayerTime != null) {
@@ -477,15 +517,16 @@ class Timings {
 
           // Format the parsed prayer time back to a string
           String formattedPrayerTime =
-              DateFormat('HH:mm').format(parsedPrayerTime);
+          DateFormat('HH:mm').format(parsedPrayerTime);
 
           // Compare the formatted current time with the formatted prayer time
           if (formattedPrayerTime.compareTo(formattedCurrentTime) > 0) {
             nextPrayer[prayerNames[i]] = prayerTime;
             // Calculate the time difference
             Duration timeDifference =
-                parsedPrayerTime.difference(parsedCurrentTime);
+            parsedPrayerTime.difference(parsedCurrentTime);
             nextPrayer['TimeDifference'] = formatTimeDifference(timeDifference);
+            isLastIndex = false; // update flag as this is not the last index
             break;
           }
         } catch (e) {
@@ -494,8 +535,19 @@ class Timings {
       }
     }
 
+    // If it's the last index, consider the next prayer time as Fajr of the next day
+    if (isLastIndex) {
+      nextPrayer['Fajr'] = prayerTimes[0];
+      // Calculate the time difference from the first prayer time of the next day
+      DateTime nextDayFajr = DateFormat('HH:mm').parse(prayerTimes[0]!);
+      nextDayFajr = nextDayFajr.add(const Duration(days: 1));
+      Duration timeDifference = nextDayFajr.difference(parsedCurrentTime);
+      nextPrayer['TimeDifference'] = formatTimeDifference(timeDifference);
+    }
+
     return nextPrayer;
   }
+
 
   String formatTimeDifference(Duration difference) {
     int hours = difference.inHours;
